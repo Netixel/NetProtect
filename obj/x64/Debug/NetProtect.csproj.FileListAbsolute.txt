@@ -1,0 +1,10 @@
+J:\VisualStudio\GamerLube\NetProtect\bin\x64\Debug\NetProtect.dll
+J:\VisualStudio\GamerLube\NetProtect\bin\x64\Debug\NetProtect.pdb
+J:\VisualStudio\GamerLube\NetProtect\obj\x64\Debug\NetProtect.csproj.CoreCompileInputs.cache
+J:\VisualStudio\GamerLube\NetProtect\obj\x64\Debug\NetProtect.dll
+J:\VisualStudio\GamerLube\NetProtect\obj\x64\Debug\NetProtect.pdb
+J:\Github\NetProtect\Application\NetProtect\bin\x64\Debug\NetProtect.dll
+J:\Github\NetProtect\Application\NetProtect\bin\x64\Debug\NetProtect.pdb
+J:\Github\NetProtect\Application\NetProtect\obj\x64\Debug\NetProtect.dll
+J:\Github\NetProtect\Application\NetProtect\obj\x64\Debug\NetProtect.pdb
+J:\Github\NetProtect\Application\NetProtect\obj\x64\Debug\NetProtect.csprojAssemblyReference.cache
