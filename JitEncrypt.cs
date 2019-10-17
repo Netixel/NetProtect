@@ -60,7 +60,10 @@ namespace NetProtect
 
         private List<JitMethodBase> Methods;
 
-
+        /// <summary>
+        /// Constructs the JitEncrypt Client Library
+        /// </summary>
+        /// <param name="remote_url">URL for retrieving remote functions</param>
         public JitEncrypt(string remote_url = "")
         {
             EncryptedMethod.DOWNLOAD_URL = remote_url;
