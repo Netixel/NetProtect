@@ -23,6 +23,16 @@ SOFTWARE.*/
 using System;
 using System.Runtime.InteropServices;
 
+//--- ICorJitInfo vfTable ((*ptr)->function)
+//https://github.com/dotnet/coreclr/blob/c51aa9006c035ccdf8aab2e9a363637e8c6e31da/src/inc/corjit.h
+//https://github.com/dotnet/coreclr/blob/c51aa9006c035ccdf8aab2e9a363637e8c6e31da/src/inc/corinfo.h
+
+//--- ICorJitCompiler vfTable ((*ptr)->function)
+//https://github.com/dotnet/coreclr/blob/c51aa9006c035ccdf8aab2e9a363637e8c6e31da/src/inc/corjit.h
+
+
+//https://github.com/dotnet/coreclr/blob/master/src/jit/ee_il_dll.cpp
+//https://github.com/dotnet/coreclr/blob/c51aa9006c035ccdf8aab2e9a363637e8c6e31da/src/jit/compiler.cpp
 namespace SJITHook
 {
     public static class Data

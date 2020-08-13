@@ -16,7 +16,7 @@ namespace NetProtect.Methods
         public static string DOWNLOAD_URL = "";
 
 
-        private static string DecryptionKey = "";
+        public static string DecryptionKey = "";
 
         public EncryptedMethod(IntPtr hMODULE, int token, MethodInfo method, ClrEncrypted encryption) : base(hMODULE, token, method, encryption)
         {

@@ -11,6 +11,7 @@ using NetProtect.Internal;
 using SJITHook;
 using NetProtect.AntiTamper;
 using NetProtect.Methods;
+using System.Runtime.CompilerServices;
 
 namespace NetProtect
 {
@@ -58,7 +59,8 @@ namespace NetProtect
     {
         private JITHook64<ClrjitAddrProvider> _jitHook64;
 
-        private List<JitMethodBase> Methods;
+        private Dictionary<long, JitMethodBase> EncryptedMethods;
+        private Dictionary<long, JitMethodBase> HashedMethods;
 
         /// <summary>
         /// Constructs the JitEncrypt Client Library
@@ -68,7 +70,8 @@ namespace NetProtect
         {
             EncryptedMethod.DOWNLOAD_URL = remote_url;
 
-            Methods = new List<JitMethodBase>();
+            EncryptedMethods = new Dictionary<long, JitMethodBase>();
+            HashedMethods = new Dictionary<long, JitMethodBase>();
             _jitHook64 = new JITHook64<ClrjitAddrProvider>();
 
 
@@ -76,6 +79,10 @@ namespace NetProtect
             DetectMethods();
         }
 
+        public void SetDecryptionKey(string key)
+        {
+            EncryptedMethod.DecryptionKey = key;
+        }
 
         public unsafe void Enable()
         {
@@ -128,22 +135,21 @@ namespace NetProtect
         }
         private unsafe void MapMethod(MethodInfo method, IntPtr HMODULE, Module module)
         {
-            //ClrEncrypted attribute
-
             ClrEncrypted encryption = method.GetCustomAttribute<ClrEncrypted>(false);
             if (encryption != null)
             {
                 int token = method.MetadataToken;
-                Methods.Add(new EncryptedMethod(HMODULE, token, method, encryption));
+                JitMethodBase entry = new EncryptedMethod(HMODULE, token, method, encryption);
+                EncryptedMethods.Add(entry.Token + entry.hMODULE.ToInt64(),entry);
                 Win32.Print($"Encrypted: {module.Name}::{method.Name} [0x{token.ToString("x8")}] with method: {Enum.GetName(typeof(EncryptionType), encryption.Type)} | Streamed? {encryption.Streamed}");
             }
 
-            //MethodHash attribute
             MethodHash hash = method.GetCustomAttribute<MethodHash>(false);
             if (hash != null)
             {
                 int token = method.MetadataToken;
-                Methods.Add(new HashedMethod(HMODULE, token, method, hash));
+                JitMethodBase entry = new HashedMethod(HMODULE, token, method, hash);
+                HashedMethods.Add(entry.Token + entry.hMODULE.ToInt64(), entry);
                 Win32.Print($"Hashed: {module.Name}::{method.Name} [0x{token.ToString("x8")}] Value: {hash.Hash}");
             }
         }
@@ -153,24 +159,27 @@ namespace NetProtect
         {
             Win32.Print("PreJIT: FindMatchingMethods");
             MethodInfo method = typeof(JitEncrypt).GetMethod("FindMethods", BindingFlags.Instance | BindingFlags.NonPublic);
-            System.Runtime.CompilerServices.RuntimeHelpers.PrepareMethod(method.MethodHandle);
+            RuntimeHelpers.PrepareMethod(method.MethodHandle);
 
-            Win32.Print("PreJIT: DoesMatch");
-            method = typeof(JitMethodBase).GetMethod("DoesMatch", BindingFlags.Instance | BindingFlags.Public);
-            System.Runtime.CompilerServices.RuntimeHelpers.PrepareMethod(method.MethodHandle);
+            Win32.Print("PreJIT: ContainsKey");
+            method = typeof(Dictionary<long, JitMethodBase>).GetMethod("ContainsKey", BindingFlags.Instance | BindingFlags.Public);
+            RuntimeHelpers.PrepareMethod(method.MethodHandle);
 
             Win32.Print("PreJIT: FindMatchingMethods [Call]");
             //--- Note the following requests are required to prevent stack overflow exceptions on some deep .net methods that they call
-            Data.CorMethodInfo64 methodInfo = new Data.CorMethodInfo64()
+            Data.CorMethodInfo64 methodInfo = new Data.CorMethodInfo64() //--- create fake data structure pointing to our fake method
             {
-                moduleHandle = IntPtr.Zero,
-                methodHandle = IntPtr.Zero
+                moduleHandle = new IntPtr(int.MaxValue),
+                methodHandle = new IntPtr(int.MaxValue - 0x06000000)
             };
-            FindMethods(&methodInfo);
-
-            Win32.Print("PreJIT: DoesMatch [Call]");
-            JitMethodBase temp = new JitMethodBase(method.Module.GetHMODULE(), method.MetadataToken, method, new ClrEncrypted(EncryptionType.aes, false));
-            temp.DoesMatch(IntPtr.Zero, 0);
+            JitMethodBase temp = new JitMethodBase(methodInfo.moduleHandle, int.MaxValue, method, new ClrEncrypted(EncryptionType.aes, false)); //--- define our fake method
+            JitMethodBase temp2 = new JitMethodBase(methodInfo.moduleHandle, int.MaxValue, method, new MethodHash("fake method hash")); //--- define our fake method
+            long value = temp.hMODULE.ToInt64() + temp.Token;//--- calculate our fake method's lookup token
+            EncryptedMethods.Add(value, temp);//--- add our fake method to our dictioanry
+            HashedMethods.Add(value, temp2);
+            FindMethods(&methodInfo); // use FindMethods to PreJit the entire chain
+            EncryptedMethods.Clear();  //--- clear our dictionary of our fake method to prevent issues
+            HashedMethods.Clear();
 
             if (AntiDebug.DetectDebuggers())
             {
@@ -185,15 +194,20 @@ namespace NetProtect
             if (methodInfo->methodHandle == IntPtr.Zero)
                 return new JitMethodBase[0];
 
-            List<JitMethodBase> result = new List<JitMethodBase>();
-            for(int i = 0; i < Methods.Count;i++)
+            //--- quickly check if this method exists in our dictionarys & if it does add it to be returned
+            long value = methodInfo->moduleHandle.ToInt64() + (0x06000000 + *(ushort*)methodInfo->methodHandle);
+            List<JitMethodBase> methods = new List<JitMethodBase>();
+            if (EncryptedMethods.ContainsKey(value))
             {
-                if(Methods[i].DoesMatch(methodInfo->moduleHandle, *(ushort*)methodInfo->methodHandle))
-                {
-                    result.Add(Methods[i]);
-                }
+                methods.Add(EncryptedMethods[value]);
             }
-            return result.ToArray();
+            if(HashedMethods.ContainsKey(value))
+            {
+                methods.Add(HashedMethods[value]);
+            }
+
+            return methods.ToArray(); 
+
         }
 
 
@@ -264,6 +278,7 @@ namespace NetProtect
         {
             JitMethodBase[] compiling_methods = FindMethods(methodInfo);
 
+            //IntPtr corJitInfo_vTable = Marshal.ReadIntPtr(corJitInfo);
 
             if (compiling_methods.Length != 0)
             {
@@ -306,6 +321,7 @@ namespace NetProtect
                 }
 
             }
+
             return _jitHook64.OriginalCompileMethod(thisPtr, corJitInfo, methodInfo, flags, nativeEntry, nativeSizeOfCode);
         }
     }

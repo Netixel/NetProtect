@@ -8,3 +8,8 @@ J:\Github\NetProtect\Application\NetProtect\bin\x64\Debug\NetProtect.pdb
 J:\Github\NetProtect\Application\NetProtect\obj\x64\Debug\NetProtect.dll
 J:\Github\NetProtect\Application\NetProtect\obj\x64\Debug\NetProtect.pdb
 J:\Github\NetProtect\Application\NetProtect\obj\x64\Debug\NetProtect.csprojAssemblyReference.cache
+G:\Software Projects\Professional Projects\NetProtect\Application\NetProtect\bin\x64\Debug\NetProtect.dll
+G:\Software Projects\Professional Projects\NetProtect\Application\NetProtect\bin\x64\Debug\NetProtect.pdb
+G:\Software Projects\Professional Projects\NetProtect\Application\NetProtect\obj\x64\Debug\NetProtect.csprojAssemblyReference.cache
+G:\Software Projects\Professional Projects\NetProtect\Application\NetProtect\obj\x64\Debug\NetProtect.dll
+G:\Software Projects\Professional Projects\NetProtect\Application\NetProtect\obj\x64\Debug\NetProtect.pdb
